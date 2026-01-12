@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Website Test — goxzvt</title>
+  <meta name="description" content="Basic website test page" />
+  <style>
+    :root{
+      --bg:#f6f8fa;
+      --card:#fff;
+      --text:#0f1724;
+      --muted:#6b7280;
+      --accent:#2563eb;
+      font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background:linear-gradient(180deg,var(--bg),#e9eef6 60%);
+      color:var(--text);
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:2rem;
+    }
+    .card{
+      background:var(--card);
+      border-radius:12px;
+      box-shadow:0 6px 30px rgba(16,24,40,0.08);
+      padding:2rem;
+      max-width:720px;
+      width:100%;
+    }
+    header{display:flex;align-items:center;justify-content:space-between;gap:1rem}
+    h1{margin:.125rem 0 .25rem;font-size:1.5rem}
+    p.lead{margin:0;color:var(--muted)}
+    .meta{margin-top:1rem;color:var(--muted);font-size:.95rem}
+    .actions{margin-top:1.25rem;display:flex;gap:.5rem;flex-wrap:wrap}
+    button{
+      background:var(--accent);
+      color:white;
+      border:0;padding:.5rem .75rem;border-radius:8px;
+      cursor:pointer;font-weight:600;
+    }
+    button.ghost{
+      background:transparent;color:var(--accent);border:1px solid rgba(37,99,235,0.15);
+    }
+    pre{background:#f3f4f6;padding:1rem;border-radius:8px;overflow:auto;font-size:.9rem}
+    footer{margin-top:1.25rem;color:var(--muted);font-size:.85rem;text-align:right}
+    @media (max-width:520px){
+      .card{padding:1rem}
+      h1{font-size:1.25rem}
+    }
+  </style>
+</head>
+<body>
+  <main class="card" role="main">
+    <header>
+      <div>
+        <h1>Website test</h1>
+        <p class="lead">A minimal page to verify hosting and basic functionality.</p>
+      </div>
+      <div style="text-align:right;color:var(--muted);font-size:.9rem">
+        goxzvt<br />
+        2026-01-12
+      </div>
+    </header>
+
+    <section class="meta" aria-live="polite">
+      <p>Quick checks included below: display, JS, and accessibility basics.</p>
+    </section>
+
+    <section class="actions" aria-hidden="false">
+      <button id="showTime">Show current time</button>
+      <button id="testAlert" class="ghost">Test alert</button>
+    </section>
+
+    <section style="margin-top:1rem">
+      <label for="result" style="display:block;margin-bottom:.5rem;color:var(--muted)">Result / output</label>
+      <pre id="result">No action yet. Click a button to run a quick test.</pre>
+    </section>
+
+    <footer>
+      Built for testing — open this file locally or deploy to your site.
+    </footer>
+  </main>
+
+  <script>
+    // Basic test interactions
+    const result = document.getElementById('result');
+    document.getElementById('showTime').addEventListener('click', () => {
+      const now = new Date();
+      result.textContent = 'Current local time: ' + now.toString();
+    });
+    document.getElementById('testAlert').addEventListener('click', () => {
+      alert('JavaScript is running correctly!');
+      result.textContent = 'Displayed a test alert (check your browser).';
+    });
+
+    // Accessibility / focus check: focus the first actionable control on load
+    window.addEventListener('load', () => {
+      document.getElementById('showTime').focus();
+    });
+  </script>
+</body>
+</html>
