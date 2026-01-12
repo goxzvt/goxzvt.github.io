@@ -3,106 +3,278 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Website Test — goxzvt</title>
-  <meta name="description" content="Basic website test page" />
+  <title>Confetti Button</title>
   <style>
     :root{
-      --bg:#f6f8fa;
-      --card:#fff;
-      --text:#0f1724;
-      --muted:#6b7280;
-      --accent:#2563eb;
-      font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+      --bg: #0f1720;
+      --card: #0b1220;
+      --accent: #ef4444; /* red */
+      --text: #f8fafc;
     }
-    *{box-sizing:border-box}
-    body{
+    html,body{
+      height:100%;
       margin:0;
-      background:linear-gradient(180deg,var(--bg),#e9eef6 60%);
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: linear-gradient(180deg,#071023 0%, #071728 100%);
       color:var(--text);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    .wrap{
       min-height:100vh;
       display:flex;
       align-items:center;
       justify-content:center;
-      padding:2rem;
+      flex-direction:column;
+      gap:28px;
+      padding:40px;
+      box-sizing:border-box;
     }
+
     .card{
-      background:var(--card);
-      border-radius:12px;
-      box-shadow:0 6px 30px rgba(16,24,40,0.08);
-      padding:2rem;
-      max-width:720px;
+      background: rgba(255,255,255,0.03);
+      border-radius:14px;
+      padding:48px 64px;
+      text-align:center;
+      box-shadow: 0 10px 30px rgba(2,6,23,0.6);
+      backdrop-filter: blur(6px);
+      max-width:820px;
       width:100%;
     }
-    header{display:flex;align-items:center;justify-content:space-between;gap:1rem}
-    h1{margin:.125rem 0 .25rem;font-size:1.5rem}
-    p.lead{margin:0;color:var(--muted)}
-    .meta{margin-top:1rem;color:var(--muted);font-size:.95rem}
-    .actions{margin-top:1.25rem;display:flex;gap:.5rem;flex-wrap:wrap}
-    button{
-      background:var(--accent);
+
+    .title{
+      font-size:20px;
+      color:#cfe8ff;
+      margin:0 0 6px;
+      opacity:0.9;
+    }
+
+    .subtitle{
+      font-size:13px;
+      margin:0 0 20px;
+      color:#9fb6d6;
+    }
+
+    /* Big red button */
+    .big-btn{
+      --size: 180px;
+      width:var(--size);
+      height:var(--size);
+      border-radius:999px;
+      background: linear-gradient(180deg, #ff6161, #e53935);
+      border: 4px solid rgba(255,255,255,0.06);
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      font-size:22px;
       color:white;
-      border:0;padding:.5rem .75rem;border-radius:8px;
-      cursor:pointer;font-weight:600;
+      font-weight:700;
+      cursor:pointer;
+      box-shadow: 0 12px 30px rgba(229,57,53,0.25), inset 0 -6px 18px rgba(0,0,0,0.15);
+      user-select:none;
+      transition: transform 160ms cubic-bezier(.2,.9,.3,1), box-shadow 160ms;
+      outline:none;
     }
-    button.ghost{
-      background:transparent;color:var(--accent);border:1px solid rgba(37,99,235,0.15);
+    .big-btn:active { transform: translateY(2px) scale(0.98); }
+    .big-btn:focus{ box-shadow: 0 12px 40px rgba(229,57,53,0.32), 0 0 0 6px rgba(229,57,53,0.12); }
+
+    /* Word display */
+    .word {
+      margin-top:22px;
+      font-size:40px;
+      font-weight:800;
+      color:#fff;
+      letter-spacing:0.6px;
+      min-height:1.2em;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      transform-origin:center;
     }
-    pre{background:#f3f4f6;padding:1rem;border-radius:8px;overflow:auto;font-size:.9rem}
-    footer{margin-top:1.25rem;color:var(--muted);font-size:.85rem;text-align:right}
+    .word.pop {
+      animation: pop 520ms cubic-bezier(.2,.8,.2,1);
+    }
+    @keyframes pop {
+      0% { transform: scale(0.6); opacity:0; filter: blur(2px); }
+      60% { transform: scale(1.12); opacity:1; filter: blur(0); }
+      100% { transform: scale(1); opacity:1; }
+    }
+
+    /* small footer */
+    .note { margin-top:18px; font-size:12px; color:#93b0cd; }
+    /* full-screen canvas placed above background but below UI */
+    canvas.confetti {
+      position:fixed;
+      left:0;
+      top:0;
+      width:100%;
+      height:100%;
+      pointer-events:none;
+      z-index:50;
+    }
+
+    /* small responsive adjustments */
     @media (max-width:520px){
-      .card{padding:1rem}
-      h1{font-size:1.25rem}
+      .card{ padding:32px; }
+      .big-btn{ --size:140px; font-size:18px; }
+      .word{ font-size:28px; }
     }
   </style>
 </head>
 <body>
-  <main class="card" role="main">
-    <header>
-      <div>
-        <h1>Website test</h1>
-        <p class="lead">A minimal page to verify hosting and basic functionality.</p>
-      </div>
-      <div style="text-align:right;color:var(--muted);font-size:.9rem">
-        goxzvt<br />
-        2026-01-12
-      </div>
-    </header>
+  <canvas class="confetti" id="confettiCanvas" aria-hidden="true"></canvas>
 
-    <section class="meta" aria-live="polite">
-      <p>Quick checks included below: display, JS, and accessibility basics.</p>
-    </section>
+  <main class="wrap" role="main">
+    <section class="card" aria-labelledby="heading">
+      <h1 id="heading" class="title">Press it?</h1>
+      <p class="subtitle">CLICK</p>
 
-    <section class="actions" aria-hidden="false">
-      <button id="showTime">Show current time</button>
-      <button id="testAlert" class="ghost">Test alert</button>
-    </section>
+      <button id="celebrateBtn" class="big-btn" aria-pressed="false" aria-label="Celebrate button">
+        NATE
+      </button>
 
-    <section style="margin-top:1rem">
-      <label for="result" style="display:block;margin-bottom:.5rem;color:var(--muted)">Result / output</label>
-      <pre id="result">No action yet. Click a button to run a quick test.</pre>
-    </section>
-
-    <footer>
-      Built for testing — open this file locally or deploy to your site.
-    </footer>
-  </main>
+      <div id="word" class="word" aria-live="polite" aria-atomic="true"></div>
 
   <script>
-    // Basic test interactions
-    const result = document.getElementById('result');
-    document.getElementById('showTime').addEventListener('click', () => {
-      const now = new Date();
-      result.textContent = 'Current local time: ' + now.toString();
-    });
-    document.getElementById('testAlert').addEventListener('click', () => {
-      alert('JavaScript is running correctly!');
-      result.textContent = 'Displayed a test alert (check your browser).';
-    });
+    // Random words - edit or extend as you like
+    const WORDS = [
+      "HIGGERS"
+    ];
 
-    // Accessibility / focus check: focus the first actionable control on load
-    window.addEventListener('load', () => {
-      document.getElementById('showTime').focus();
-    });
+    // Simple confetti system (canvas, no external libs)
+    (function(){
+      const canvas = document.getElementById('confettiCanvas');
+      const ctx = canvas.getContext('2d');
+      let W = canvas.width = innerWidth;
+      let H = canvas.height = innerHeight;
+      const particles = [];
+      const colors = [
+        "#ff3b30","#ff9500","#ffcc00","#34c759","#5ac8fa","#007aff","#5856d6","#ff2d55"
+      ];
+
+      function resize(){
+        W = canvas.width = innerWidth;
+        H = canvas.height = innerHeight;
+      }
+      addEventListener('resize', resize, {passive:true});
+
+      function rand(min, max) { return Math.random()*(max-min)+min; }
+
+      function spawnConfetti(x,y,amount=80){
+        for(let i=0;i<amount;i++){
+          const angle = rand(-Math.PI, 0); // mostly upwards spread
+          const speed = rand(2,11);
+          particles.push({
+            x: x + rand(-8,8),
+            y: y + rand(-8,8),
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            size: Math.floor(rand(6,12)),
+            color: colors[(Math.random()*colors.length)|0],
+            rotation: rand(0, Math.PI*2),
+            vr: rand(-0.25, 0.25),
+            ttl: rand(900, 1600), // ms
+            created: performance.now(),
+            drift: rand(-0.5, 0.5),
+            gravity: rand(0.02,0.12),
+            tilt: rand(-0.3,0.3)
+          });
+        }
+      }
+
+      function update(now){
+        ctx.clearRect(0,0,W,H);
+        for(let i=particles.length-1;i>=0;i--){
+          const p = particles[i];
+          const age = now - p.created;
+          if(age > p.ttl || p.y > H + 100 || p.x < -200 || p.x > W+200){
+            particles.splice(i,1);
+            continue;
+          }
+          // physics
+          p.vy += p.gravity;
+          p.vx += p.drift*0.002;
+          p.x += p.vx;
+          p.y += p.vy;
+          p.rotation += p.vr;
+          // fade
+          const life = 1 - (age / p.ttl);
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, Math.min(1, life));
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rotation);
+          // draw rectangle confetti (tilt varies)
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-p.size/2, -p.size/2 + Math.sin(age*0.02)*p.tilt*8, p.size, p.size*0.6);
+          ctx.restore();
+        }
+        if(particles.length) requestAnimationFrame(update);
+      }
+
+      // public trigger
+      window.popConfettiAt = function(x,y){
+        spawnConfetti(x,y, 120);
+        // start animation loop if not running
+        if(particles.length === 0) requestAnimationFrame(update);
+      };
+    })();
+
+    // Button + word logic
+    (function(){
+      const btn = document.getElementById('celebrateBtn');
+      const wordEl = document.getElementById('word');
+
+      function pickWord(){
+        return WORDS[(Math.random()*WORDS.length)|0];
+      }
+
+      function showWord(w){
+        wordEl.textContent = w;
+        wordEl.classList.remove('pop');
+        // force reflow to restart animation
+        void wordEl.offsetWidth;
+        wordEl.classList.add('pop');
+      }
+
+      function getButtonCenter(el){
+        const r = el.getBoundingClientRect();
+        return { x: r.left + r.width/2, y: r.top + r.height/2 };
+      }
+
+      btn.addEventListener('click', (e) => {
+        // accessibility
+        btn.setAttribute('aria-pressed', 'true');
+        setTimeout(()=>btn.setAttribute('aria-pressed','false'), 250);
+
+        // random word
+        const w = pickWord();
+        showWord(w);
+
+        // confetti at button center
+        const c = getButtonCenter(btn);
+        // coordinates relative to viewport
+        if(window.popConfettiAt) popConfettiAt(c.x, c.y);
+
+        // small click animation
+        btn.animate([
+          { transform: 'scale(1)' },
+          { transform: 'scale(0.96)' },
+          { transform: 'scale(1)' }
+        ], { duration: 260, easing: 'cubic-bezier(.2,.8,.2,1)' });
+      });
+
+      // keyboard support (Enter/Space)
+      btn.addEventListener('keydown', (e) => {
+        if(e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault();
+          btn.click();
+        }
+      });
+
+      // initial friendly word
+      showWord("Press me");
+    })();
   </script>
 </body>
 </html>
