@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Spinning Wheel</title>
+  <style>
+    :root{
+      --size: min(86vmin, 700px);
+      --bg-1: #0b1220;
+      --bg-2: #07101a;
+      --panel: #0b1320;
+      --muted: #94a3b8;
+      --accent: #60a5fa;
+      --surface-2: #0f1724;
+    }
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 100%);
+      color:#e6eefb;
+    }
+
+    .app {
+      width:100%;
+      max-width:1100px;
+      display:grid;
+      grid-template-columns: 1fr 360px;
+      gap:18px;
+      align-items:start;
+    }
+
+    .panel {
+      background:var(--panel);
+      border-radius:12px;
+      box-shadow: 0 8px 30px rgba(2,6,23,0.6);
+      padding:18px;
+      color:var(--muted);
+    }
+
+    .wheel-wrap{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      align-items:center;
+    }
+
+    .canvas-wrap{
+      width:var(--size);
+      height:var(--size);
+      display:grid;
+      place-items:center;
+      position:relative;
+    }
+
+    canvas{
+      width:100%;
+      height:100%;
+      border-radius:50%;
+      transition: none;
+      will-change: transform;
+      box-shadow: 0 10px 30px rgba(2,6,23,0.6), inset 0 -6px 20px rgba(0,0,0,0.15);
+      background: transparent;
+    }
+
+    /* Pointer/indicator at top - rotated 180deg (flipped) */
+    .indicator{
+      position:absolute;
+      top:6px;
+      left:50%;
+      transform:translateX(-50%) rotate(180deg);
+      width:0;
+      height:0;
+      border-left:14px solid transparent;
+      border-right:14px solid transparent;
+      border-bottom:20px solid #ef4444;
+      filter:drop-shadow(0 3px 6px rgba(0,0,0,.6));
+      z-index:3;
+    }
+
+    /* Center spin button overlay */
+    .center-btn{
+      position:absolute;
+      z-index:4;
+      display:grid;
+      place-items:center;
+      width:26%;
+      aspect-ratio:1/1;
+      border-radius:50%;
+      left:50%;
+      top:50%;
+      transform:translate(-50%,-50%);
+      background:transparent;
+      color:#fff;
+      border:2px solid rgba(255,255,255,0.06);
+      cursor:pointer;
+      font-weight:800;
+      font-size:clamp(14px, 2.6vw, 28px);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      transition:transform .12s ease, box-shadow .12s ease, opacity .12s ease;
+      user-select:none;
+    }
+    .center-btn:active{ transform:translate(-50%,-50%) scale(.98) }
+    .center-btn[disabled]{ opacity:.5; cursor:default }
+
+    .controls{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      justify-content:center;
+      margin-top:6px;
+    }
+
+    button{
+      background:var(--accent);
+      color:white;
+      border:none;
+      padding:10px 14px;
+      border-radius:8px;
+      cursor:pointer;
+      font-weight:600;
+      box-shadow: 0 6px 18px rgba(6,12,30,0.5);
+    }
+    button.secondary{
+      background:transparent;
+      border:1px solid rgba(255,255,255,0.06);
+      color:var(--muted);
+      box-shadow:none;
+    }
+    button:disabled{opacity:.5;cursor:default}
+
+    /* Sidebar */
+    .sidebar{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+
+    label{font-size:.95rem;color:var(--muted)}
+    .add-row{
+      display:flex;
+      gap:8px;
+    }
+    input[type="text"]{
+      flex:1;
+      padding:10px 12px;
+      border-radius:8px;
+      border:1px solid rgba(255,255,255,0.04);
+      background:rgba(255,255,255,0.02);
+      color:#e6eefb;
+      font-size:0.95rem;
+    }
+    .options-list{
+      max-height:420px;
+      overflow:auto;
+      padding:8px;
+      border-radius:8px;
+      border:1px dashed rgba(255,255,255,0.04);
+      background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);
+    }
+    .option-item{
+      display:flex;
+      justify-content:space-between;
+      gap:8px;
+      padding:8px;
+      border-radius:6px;
+      font-size:.95rem;
+      align-items:center;
+      color:#e6eefb;
+    }
+    .option-item + .option-item{margin-top:6px}
+    .small{
+      font-size:.85rem;color:var(--muted);padding:6px 8px;border-radius:6px;background:transparent;border:1px solid rgba(255,255,255,0.02);
+    }
+    .muted{color:var(--muted);font-weight:500}
+    .controls-row{display:flex;gap:8px;flex-wrap:wrap}
+    .center{display:flex;justify-content:center}
+    .option-item.selected{ outline:2px solid rgba(96,165,250,0.18); background: rgba(96,165,250,0.03) }
+
+    /* Winner overlay */
+    #winnerOverlay{
+      position:fixed;
+      inset:0;
+      display:none;
+      background:linear-gradient(180deg, rgba(2,6,23,0.92), rgba(2,6,23,0.96));
+      z-index:9999;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      padding:28px;
+      cursor:pointer;
+    }
+    #winnerText{
+      color: #fff;
+      font-weight:900;
+      font-size:clamp(28px, 12vw, 120px);
+      line-height:1;
+      text-shadow: 0 6px 30px rgba(0,0,0,0.7);
+      word-break:break-word;
+    }
+    #winnerSub{
+      margin-top:18px;
+      color:var(--muted);
+      font-size:clamp(12px, 2.2vw, 20px);
+    }
+
+    @media (max-width:980px){
+      .app{grid-template-columns:1fr;max-width:720px}
+      .sidebar{order:2}
+      .wheel-wrap{order:1}
+      .canvas-wrap{width:84vmin;height:84vmin}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="panel wheel-wrap" aria-live="polite">
+      <div class="canvas-wrap" aria-hidden="false">
+        <div class="indicator" aria-hidden="true"></div>
+        <canvas id="wheel" width="800" height="800" role="img" aria-label="Spinning wheel"></canvas>
+
+        <!-- center button: acts as fast spin -->
+        <button id="centerSpinBtn" class="center-btn" title="Spin">SPIN</button>
+      </div>
+      <!-- no hint/result text shown by default -->
+    </div>
+
+    <aside class="panel sidebar" aria-label="Controls">
+      <div>
+        <label for="optionInput">Add an option</label>
+        <div class="add-row" style="margin-top:8px">
+          <input id="optionInput" type="text" placeholder="e.g. Pizza" />
+          <button id="addBtn">Add</button>
+        </div>
+      </div>
+
+      <div>
+        <label>Options</label>
+        <div class="options-list" id="optionsList" tabindex="0" aria-live="polite"></div>
+      </div>
+
+      <div class="controls-row center" style="margin-top:6px">
+        <button id="shuffleBtn" class="secondary">Shuffle</button>
+        <button id="clearBtn" class="secondary">Clear</button>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Fullscreen winner overlay (click to dismiss) -->
+  <div id="winnerOverlay" role="dialog" aria-modal="true" tabindex="-1">
+    <div>
+      <div id="winnerText" aria-live="polite"></div>
+      <div id="winnerSub">Click anywhere to close</div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      // Elements
+      const canvas = document.getElementById('wheel');
+      const ctx = canvas.getContext('2d');
+      const centerSpinBtn = document.getElementById('centerSpinBtn');
+      const clearBtn = document.getElementById('clearBtn');
+      const addBtn = document.getElementById('addBtn');
+      const optionInput = document.getElementById('optionInput');
+      const optionsListEl = document.getElementById('optionsList');
+      const shuffleBtn = document.getElementById('shuffleBtn');
+      const winnerOverlay = document.getElementById('winnerOverlay');
+      const winnerText = document.getElementById('winnerText');
+
+      const TAU = Math.PI * 2;
+      let options = []; // {label, color}
+      let colors = [
+        '#FF6B6B','#F7C948','#60A5FA','#7C3AED','#34D399','#F97316','#0EA5E9','#F472B6'
+      ];
+
+      let rotation = 0; // radians
+      let isSpinning = false;
+      let animationId = null;
+      let selectedOptionIndex = null;
+
+      // Helpers
+      function randColor(){
+        return colors[Math.floor(Math.random()*colors.length)];
+      }
+      function hexToRGBA(hex, a=1){
+        const h = hex.replace('#','');
+        const r = parseInt(h.substring(0,2),16);
+        const g = parseInt(h.substring(2,4),16);
+        const b = parseInt(h.substring(4,6),16);
+        return `rgba(${r},${g},${b},${a})`;
+      }
+
+      function resizeCanvasToDisplaySize(){
+        const ratio = window.devicePixelRatio || 1;
+        const w = canvas.clientWidth * ratio;
+        const h = canvas.clientHeight * ratio;
+        if (canvas.width !== w || canvas.height !== h){
+          canvas.width = w;
+          canvas.height = h;
+        }
+      }
+
+      function drawWheel(){
+        resizeCanvasToDisplaySize();
+        const w = canvas.width;
+        const h = canvas.height;
+        const cx = w/2;
+        const cy = h/2;
+        const radius = Math.min(w,h)/2 * 0.95;
+        ctx.clearRect(0,0,w,h);
+
+        const n = options.length;
+        if (n === 0) {
+          // draw a neutral circle (no slices, no labels)
+          ctx.beginPath();
+          ctx.arc(cx,cy,radius,0,TAU);
+          ctx.fillStyle = 'rgba(255,255,255,0.02)';
+          ctx.fill();
+          // subtle ring
+          ctx.lineWidth = 2 * (window.devicePixelRatio || 1);
+          ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+          ctx.stroke();
+
+          // draw center circle for consistency
+          ctx.beginPath();
+          ctx.arc(cx,cy,radius*0.22,0,TAU);
+          ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--surface-2') || '#0f1724';
+          ctx.fill();
+          return;
+        }
+
+        const sector = TAU / n;
+
+        // Save and apply rotation transform (rotate around center)
+        ctx.save();
+        ctx.translate(cx,cy);
+        ctx.rotate(rotation);
+        ctx.translate(-cx,-cy);
+
+        // Draw slices
+        for (let i=0;i<n;i++){
+          const start = i*sector;
+          const end = start + sector;
+          ctx.beginPath();
+          ctx.moveTo(cx,cy);
+          ctx.arc(cx,cy,radius,start,end);
+          ctx.closePath();
+          ctx.fillStyle = options[i]?.color || hexToRGBA('#111827');
+          ctx.fill();
+
+          // Only draw dividing stroke when there are multiple slices
+          if (n > 1) {
+            ctx.strokeStyle = 'rgba(0,0,0,0.18)';
+            ctx.lineWidth = 2 * (window.devicePixelRatio || 1);
+            ctx.stroke();
+          }
+
+          // label (skip when there are zero options)
+          ctx.save();
+          const mid = start + sector/2;
+          const labelRadius = radius * 0.65;
+          const lx = cx + Math.cos(mid) * labelRadius;
+          const ly = cy + Math.sin(mid) * labelRadius;
+          ctx.translate(lx,ly);
+          ctx.rotate(mid + Math.PI/2);
+          // choose text color for contrast
+          ctx.fillStyle = '#0b1220';
+          ctx.font = `${Math.max(12, radius*0.06)}px sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          const label = options[i]?.label ?? '';
+          if (label) wrapText(ctx, label, 0, 0, radius*0.4, Math.max(12, radius*0.06));
+          ctx.restore();
+        }
+
+        ctx.restore();
+
+        // draw center circle (darker for contrast in dark mode)
+        ctx.beginPath();
+        ctx.arc(cx,cy,radius*0.22,0,TAU);
+        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--surface-2') || '#0f1724';
+        ctx.fill();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+        ctx.stroke();
+      }
+
+      function wrapText(ctx, text, x, y, maxWidth, lineHeight){
+        const words = text.split(' ');
+        let line = '';
+        const lines = [];
+        for (let n=0;n<words.length;n++){
+          const testLine = line + (line ? ' ' : '') + words[n];
+          const metrics = ctx.measureText(testLine);
+          if (metrics.width > maxWidth && n > 0){
+            lines.push(line);
+            line = words[n];
+          } else {
+            line = testLine;
+          }
+        }
+        lines.push(line);
+        const totalH = lines.length * lineHeight;
+        let startY = y - totalH/2 + lineHeight/2;
+        ctx.fillStyle = ctx.fillStyle || '#fff';
+        for (let i=0;i<lines.length;i++){
+          ctx.fillText(lines[i], x, startY + i*lineHeight);
+        }
+      }
+
+      // UI management
+      function refreshOptionsList(){
+        optionsListEl.innerHTML = '';
+        options.forEach((opt, idx)=>{
+          const el = document.createElement('div');
+          el.className = 'option-item';
+          el.dataset.idx = idx;
+          el.innerHTML = `
+            <div style="display:flex;gap:8px;align-items:center">
+              <div style="width:18px;height:18px;border-radius:4px;background:${opt.color};box-shadow:inset 0 -2px 4px rgba(0,0,0,0.25)"></div>
+              <div>${escapeHtml(opt.label)}</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <button data-act="up" title="move up" style="padding:6px;border-radius:6px;background:transparent;border:1px solid rgba(255,255,255,0.03);color:var(--muted);cursor:pointer">▲</button>
+              <button data-act="down" title="move down" style="padding:6px;border-radius:6px;background:transparent;border:1px solid rgba(255,255,255,0.03);color:var(--muted);cursor:pointer">▼</button>
+              <button data-act="remove" title="remove" style="padding:6px;border-radius:6px;background:transparent;border:1px solid rgba(255,255,255,0.03);color:#ef4444;cursor:pointer">✕</button>
+            </div>
+          `;
+          el.addEventListener('click', (ev)=>{
+            const act = ev.target.closest('button')?.dataset?.act;
+            if (!act) {
+              const prev = optionsListEl.querySelector('.option-item.selected');
+              if (prev) prev.classList.remove('selected');
+              el.classList.add('selected');
+              return;
+            }
+            if (act === 'remove'){
+              options.splice(idx,1);
+              updateAfterChange();
+            } else if (act === 'up' && idx>0){
+              const a = options.splice(idx,1)[0];
+              options.splice(idx-1,0,a);
+              updateAfterChange();
+            } else if (act === 'down' && idx < options.length-1){
+              const a = options.splice(idx,1)[0];
+              options.splice(idx+1,0,a);
+              updateAfterChange();
+            }
+          });
+          optionsListEl.appendChild(el);
+        });
+
+        // disable center spin when no options
+        centerSpinBtn.disabled = options.length === 0 || isSpinning;
+
+        drawWheel();
+      }
+
+      function updateAfterChange(){
+        refreshOptionsList();
+      }
+
+      function escapeHtml(s){
+        return String(s).replace(/[&<>"']/g, c=>({
+          '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"
+        })[c]);
+      }
+
+      // Spin animation (a bit slower)
+      function spin(durationMs = 2400, extraRotations = null){
+        if (isSpinning || options.length===0) return;
+        isSpinning = true;
+        centerSpinBtn.disabled = true;
+
+        const start = performance.now();
+        const startRot = rotation % TAU;
+        const minRot = 2*TAU;
+        const maxRot = 6*TAU;
+        const randomExtra = extraRotations === null ? (Math.random()*(maxRot-minRot)+minRot) : extraRotations * TAU;
+        const randOffset = Math.random() * (TAU / options.length);
+        const targetRotation = startRot + randomExtra + randOffset;
+
+        function easeOutCubic(t){ return 1 - Math.pow(1 - t, 3); }
+
+        function frame(now){
+          const t = Math.min(1, (now - start) / durationMs);
+          const eased = easeOutCubic(t);
+          rotation = startRot + (targetRotation - startRot) * eased;
+          drawWheel();
+          if (t < 1){
+            animationId = requestAnimationFrame(frame);
+          } else {
+            isSpinning = false;
+            centerSpinBtn.disabled = options.length === 0;
+            computeSelected();
+          }
+        }
+        animationId = requestAnimationFrame(frame);
+      }
+
+      function computeSelected(){
+        if (options.length===0) return;
+        const n = options.length;
+        const sector = TAU / n;
+        let val = (-Math.PI/2 - rotation) % TAU;
+        if (val < 0) val += TAU;
+        const idx = Math.floor(val / sector) % n;
+        selectedOptionIndex = idx;
+        const chosen = options[idx];
+
+        // highlight selected item in list if present
+        const prev = optionsListEl.querySelector('.option-item.selected');
+        if (prev) prev.classList.remove('selected');
+        const optEl = optionsListEl.querySelector(`.option-item[data-idx="${idx}"]`);
+        if (optEl) optEl.classList.add('selected');
+
+        // Show fullscreen winner overlay with large text
+        showWinner(chosen);
+      }
+
+      function showWinner(option){
+        winnerText.textContent = option.label;
+        // tint background with option color for a subtle accent
+        winnerOverlay.style.background = `linear-gradient(180deg, rgba(2,6,23,0.95), rgba(2,6,23,0.98)), radial-gradient(circle at 50% 20%, ${hexToRGBA(option.color,0.22)}, transparent 30%)`;
+        winnerOverlay.style.display = 'flex';
+        winnerOverlay.focus?.();
+      }
+
+      // Actions
+      addBtn.addEventListener('click', ()=>{
+        const v = optionInput.value.trim();
+        if (!v) return;
+        options.push({label:v, color: randColor()});
+        optionInput.value = '';
+        updateAfterChange();
+      });
+      // Enter in input adds option (spacebar is not handled globally)
+      optionInput.addEventListener('keydown', (e)=>{ if (e.key==='Enter'){ addBtn.click(); } });
+
+      clearBtn.addEventListener('click', ()=>{
+        if (isSpinning) return;
+        options = [];
+        selectedOptionIndex = null;
+        updateAfterChange();
+      });
+
+      centerSpinBtn.addEventListener('click', ()=> spin(2400));
+
+      shuffleBtn.addEventListener('click', ()=>{
+        for (let i = options.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [options[i], options[j]] = [options[j], options[i]];
+        }
+        updateAfterChange();
+      });
+
+      // winner overlay dismiss
+      winnerOverlay.addEventListener('click', ()=>{
+        winnerOverlay.style.display = 'none';
+      });
+
+      // initialize
+      refreshOptionsList();
+
+      window.addEventListener('resize', () => { drawWheel(); });
+      drawWheel();
+
+      // For quick console/testing
+      window.__wheel = {
+        add(label){ options.push({label, color: randColor()}); updateAfterChange(); },
+        set(optsArray){ options = optsArray.map(l=> typeof l === 'string' ? {label:l,color:randColor()} : l); updateAfterChange(); },
+        spin: () => spin(2400)
+      };
+    })();
+  </script>
+</body>
+</html>
