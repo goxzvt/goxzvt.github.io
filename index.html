@@ -429,7 +429,7 @@
             </div>
             <div style="display:flex;gap:8px;align-items:center">
               <button data-act="up" title="move up" style="padding:6px;border-radius:6px;background:transparent;border:1px solid rgba(255,255,255,0.03);color:var(--muted);cursor:pointer">▲</button>
-              <button data-act="down" title="move down" style="padding:6px;border-radius:6px;background:transparent;border:1px solid rgba(255,255,255,0.03);color:var(--muted);cursor:pointer">▼</button>
+              <button data-act="down" title="move down" style="padding:6px;border-radius:6px;background:transparent;border:1px solid rgba(255,255,255,0.03);color:var(--muted);cursor:pointer">▼</butt[...]
               <button data-act="remove" title="remove" style="padding:6px;border-radius:6px;background:transparent;border:1px solid rgba(255,255,255,0.03);color:#ef4444;cursor:pointer">✕</button>
             </div>
           `;
@@ -457,8 +457,8 @@
           optionsListEl.appendChild(el);
         });
 
-        // disable center spin when no options
-        centerSpinBtn.disabled = options.length === 0 || isSpinning;
+        // disable center spin when there are no or only one option
+        centerSpinBtn.disabled = options.length <= 1 || isSpinning;
 
         drawWheel();
       }
@@ -475,7 +475,7 @@
 
       // Spin animation (a bit slower)
       function spin(durationMs = 2400, extraRotations = null){
-        if (isSpinning || options.length===0) return;
+        if (isSpinning || options.length <= 1) return;
         isSpinning = true;
         centerSpinBtn.disabled = true;
 
@@ -498,7 +498,7 @@
             animationId = requestAnimationFrame(frame);
           } else {
             isSpinning = false;
-            centerSpinBtn.disabled = options.length === 0;
+            centerSpinBtn.disabled = options.length <= 1;
             computeSelected();
           }
         }
@@ -506,7 +506,7 @@
       }
 
       function computeSelected(){
-        if (options.length===0) return;
+        if (options.length <= 1) return;
         const n = options.length;
         const sector = TAU / n;
         let val = (-Math.PI/2 - rotation) % TAU;
